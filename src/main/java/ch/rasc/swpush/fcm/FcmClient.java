@@ -84,6 +84,7 @@ public class FcmClient {
     //Preview of the message
     builder.setIcon("sc_logo.png");
     builder.addAction(getGoToConversationAction());
+    builder.setRequireInteraction(true);
     return builder.build();
   }
 
