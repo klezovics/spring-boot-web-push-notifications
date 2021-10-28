@@ -1,5 +1,18 @@
 package ch.rasc.swpush.fcm;
 
+import ch.rasc.swpush.Application;
+import ch.rasc.swpush.FcmSettings;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.TopicManagementResponse;
+import com.google.firebase.messaging.WebpushConfig;
+import com.google.firebase.messaging.WebpushFcmOptions;
+import com.google.firebase.messaging.WebpushNotification;
+import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -8,20 +21,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-
-import org.springframework.stereotype.Service;
-
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.Message;
-import com.google.firebase.messaging.TopicManagementResponse;
-import com.google.firebase.messaging.WebpushConfig;
-import com.google.firebase.messaging.WebpushNotification;
-
-import ch.rasc.swpush.Application;
-import ch.rasc.swpush.FcmSettings;
 
 @Service
 public class FcmClient {
@@ -49,6 +48,7 @@ public class FcmClient {
 //            .build())
 //        .build();
 
+    //TODO Add code to set the token for each user
     var message = toMessage(data);
 
     String response = FirebaseMessaging.getInstance().sendAsync(message).get();
@@ -61,30 +61,48 @@ public class FcmClient {
       builder.putAllData(data);
       builder.setTopic("chuck");
       builder.setWebpushConfig(getWebpushConfig());
+      //This must be used on the real user
+      //builder.setToken("test-user-token");
 
       return builder.build();
   }
 
   private WebpushConfig getWebpushConfig() {
     var builder = WebpushConfig.builder();
-    builder.putHeader("ttl","300");
+    builder.putHeader("ttl","3000");
     builder.setNotification(getWebpushNotification());
+    builder.setFcmOptions(WebpushFcmOptions.withLink("http://superchat.de"));
 
     return builder.build();
   }
 
   private WebpushNotification getWebpushNotification() {
-     var builder = WebpushNotification.builder();
-     builder.setTitle("Superchat nofication (server)");
-     builder.setBody("This is a message from the superchat app (server)");
-     builder.setIcon("sc_logo.png");
-     builder.addAction(getGoToConversationAction());
-     return builder.build();
+    var builder = WebpushNotification.builder();
+    builder.setTitle("New message @ Superchat");
+    builder.setBody(getNotificationBody("Max Musterman"));
+    //New message from XXX name
+    //Preview of the message
+    builder.setIcon("sc_logo.png");
+    builder.addAction(getGoToConversationAction());
+    return builder.build();
+  }
+
+  private String getNotificationBody(String name) {
+    var sb = new StringBuilder();
+
+    //sb.append("New message from " + name);
+    sb.append("Click here to go to superchat conversation");
+
+    return sb.toString();
   }
 
   private WebpushNotification.Action getGoToConversationAction() {
-      var action =  new WebpushNotification.Action("Go to superchat app","Go");
-      return action;
+    var action = new WebpushNotification.Action(
+      "Go to superchat app",
+      "Go to superchat app",
+      "sc_logo.png"
+    );
+    return action;
   }
 
   public void subscribe(String topic, String clientToken) {
